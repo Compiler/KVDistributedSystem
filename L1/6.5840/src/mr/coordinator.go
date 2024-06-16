@@ -21,7 +21,7 @@ type Coordinator struct {
 
 // Your code here -- RPC handlers for the worker to call.
 
-func (c *Coordinator) Task(args *MapTaskArgs, reply *WorkerTaskReply) error {
+func (c *Coordinator) Task(reply *WorkerTaskReply) error {
 	fmt.Println("We got called from coordinator")
 	c.lock.Lock()
 	fileToParse := c.inputFiles[0]
@@ -32,7 +32,19 @@ func (c *Coordinator) Task(args *MapTaskArgs, reply *WorkerTaskReply) error {
 	reply.File = fileToParse
 	reply.WriteTo = "."
 	return nil
+}
 
+unc (c *Coordinator) DoneMap(reply *WorkerTaskReply) error {
+	fmt.Println("We got called from coordinator")
+	c.lock.Lock()
+	fileToParse := c.inputFiles[0]
+	c.inputFiles = c.inputFiles[1:]
+	c.lock.Unlock()
+
+	reply.DoMap = true
+	reply.File = fileToParse
+	reply.WriteTo = "."
+	return nil
 }
 
 // an example RPC handler.

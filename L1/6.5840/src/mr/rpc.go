@@ -25,7 +25,9 @@ type ExampleReply struct {
 }
 
 // Add your RPC definitions here.
-type MapTaskArgs struct {
+type DoneTask struct {
+	DoMap      bool
+	outputFile string
 }
 
 type WorkerTaskReply struct {

@@ -1,11 +1,14 @@
 package mr
 
 import (
+	"bufio"
 	"fmt"
 	"hash/fnv"
 	"log"
 	"net/rpc"
 	"os"
+	"strings"
+	"time"
 )
 
 // Map functions return a slice of KeyValue.
@@ -22,25 +25,85 @@ func ihash(key string) int {
 	return int(h.Sum32() & 0x7fffffff)
 }
 
+func writePairsToFile(pairs []KeyValue, filename string) error {
+	// Open the file for writing. Create it if it doesn't exist, and truncate it if it does.
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Create a new buffered writer.
+	writer := bufio.NewWriter(file)
+
+	// Write each KeyValue pair to the file.
+	for _, pair := range pairs {
+		line := fmt.Sprintf("%s %s\n", pair.Key, pair.Value)
+		_, err := writer.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Flush any buffered data to the underlying writer (the file).
+	return writer.Flush()
+}
+
+func readPairsFromFile(filename string) ([]KeyValue, error) {
+	// Open the file for reading.
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var pairs []KeyValue
+
+	// Create a new buffered reader.
+	scanner := bufio.NewScanner(file)
+
+	// Read each line and split it into key-value pairs.
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Fields(line)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid line format: %s", line)
+		}
+		pairs = append(pairs, KeyValue{Key: parts[0], Value: parts[1]})
+	}
+
+	// Check for errors during scanning.
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return pairs, nil
+}
+
 // main/mrworker.go calls this function.
 func Worker(mapf func(string, string) []KeyValue,
 	reducef func(string, []string) string) {
 
 	// Your worker implementation here.
-	args := MapTaskArgs{}
 
 	// declare a reply structure.
 	reply := WorkerTaskReply{}
 
-	ok := call("Coordinator.Task", &args, &reply)
+	ok := call("Coordinator.Task", &reply)
 	if ok {
 		// reply.Y should be 100.
-		content, err := os.ReadFile(reply.File)
-		if err != nil {
-			fmt.Print("Fuck")
+		if reply.DoMap {
+			content, err := os.ReadFile(reply.File)
+			if err != nil {
+				fmt.Print("Fuck")
+			} else {
+				kvPairs := mapf(reply.File, string(content))
+				uniqueFilename := string(ihash(time.Now().GoString()))
+				writePairsToFile(kvPairs, uniqueFilename)
+			}
+		} else {
+			content, err := os.ReadFile(reply.File)
 		}
-		kvPairs := mapf(reply.WriteTo, string(content))
-		fmt.Print("YESYES kvPairs: ", kvPairs)
 	} else {
 		fmt.Println("Reply: ", reply)
 		fmt.Printf("call failed!\n")
