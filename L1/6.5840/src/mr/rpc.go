@@ -28,10 +28,10 @@ type ExampleReply struct {
 type MapTaskArgs struct {
 }
 
-type TaskReply struct {
-	doMap   bool
-	file    string
-	writeTo string
+type WorkerTaskReply struct {
+	DoMap   bool
+	File    string
+	WriteTo string
 }
 
 // Cook up a unique-ish UNIX-domain socket name

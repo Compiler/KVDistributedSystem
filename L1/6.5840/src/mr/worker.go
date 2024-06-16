@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"log"
 	"net/rpc"
+	"os"
 )
 
 // Map functions return a slice of KeyValue.
@@ -26,9 +27,28 @@ func Worker(mapf func(string, string) []KeyValue,
 	reducef func(string, []string) string) {
 
 	// Your worker implementation here.
+	args := MapTaskArgs{}
+
+	// declare a reply structure.
+	reply := WorkerTaskReply{}
+
+	ok := call("Coordinator.Task", &args, &reply)
+	if ok {
+		// reply.Y should be 100.
+		content, err := os.ReadFile(reply.File)
+		if err != nil {
+			fmt.Print("Fuck")
+		}
+		kvPairs := mapf(reply.WriteTo, string(content))
+		fmt.Print("YESYES kvPairs: ", kvPairs)
+	} else {
+		fmt.Println("Reply: ", reply)
+		fmt.Printf("call failed!\n")
+	}
+	fmt.Print("We done")
 
 	// uncomment to send the Example RPC to the coordinator.
-	CallExample()
+	//CallExample()
 
 }
 

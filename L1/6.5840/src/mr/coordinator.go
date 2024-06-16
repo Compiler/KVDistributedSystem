@@ -1,11 +1,13 @@
 package mr
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"net/rpc"
 	"os"
+	"sync"
 )
 
 type Coordinator struct {
@@ -14,14 +16,21 @@ type Coordinator struct {
 	reducedFiles []string
 	outputFiles  []string
 	numReduce    int
+	lock         sync.Mutex
 }
 
 // Your code here -- RPC handlers for the worker to call.
 
-func (c *Coordinator) Task(args *MapTaskArgs, reply *TaskReply) error {
-	reply.doMap = true
-	reply.file = c.inputFiles[0]
-	reply.writeTo = "test.txt"
+func (c *Coordinator) Task(args *MapTaskArgs, reply *WorkerTaskReply) error {
+	fmt.Println("We got called from coordinator")
+	c.lock.Lock()
+	fileToParse := c.inputFiles[0]
+	c.inputFiles = c.inputFiles[1:]
+	c.lock.Unlock()
+
+	reply.DoMap = true
+	reply.File = fileToParse
+	reply.WriteTo = "."
 	return nil
 
 }
@@ -63,7 +72,7 @@ func (c *Coordinator) Done() bool {
 // main/mrcoordinator.go calls this function.
 // nReduce is the number of reduce tasks to use.
 func MakeCoordinator(files []string, nReduce int) *Coordinator {
-	c := Coordinator{files, make([]string, 0), make([]string, 0), nReduce}
+	c := Coordinator{files, make([]string, 0), make([]string, 0), nReduce, sync.Mutex{}}
 
 	// Your code here.
 
