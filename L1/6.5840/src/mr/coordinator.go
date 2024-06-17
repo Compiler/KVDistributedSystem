@@ -34,16 +34,11 @@ func (c *Coordinator) Task(reply *WorkerTaskReply) error {
 	return nil
 }
 
-unc (c *Coordinator) DoneMap(reply *WorkerTaskReply) error {
+func (c *Coordinator) DoneMap(reply *DoneTask) error {
 	fmt.Println("We got called from coordinator")
 	c.lock.Lock()
-	fileToParse := c.inputFiles[0]
-	c.inputFiles = c.inputFiles[1:]
-	c.lock.Unlock()
 
-	reply.DoMap = true
-	reply.File = fileToParse
-	reply.WriteTo = "."
+	c.lock.Unlock()
 	return nil
 }
 

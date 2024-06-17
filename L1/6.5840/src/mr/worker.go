@@ -100,6 +100,7 @@ func Worker(mapf func(string, string) []KeyValue,
 				kvPairs := mapf(reply.File, string(content))
 				uniqueFilename := string(ihash(time.Now().GoString()))
 				writePairsToFile(kvPairs, uniqueFilename)
+				call("Coordinator.DoneTask", {})
 			}
 		} else {
 			content, err := os.ReadFile(reply.File)
